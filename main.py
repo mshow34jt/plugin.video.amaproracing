@@ -16,7 +16,7 @@ addon_handle = int(sys.argv[1])
 #Localisation
 local_string = xbmcaddon.Addon(id='plugin.video.amaproracing').getLocalizedString
 
-ROOTDIR = xbmcaddon.Addon(id='plugin.video.motocross').getAddonInfo('path')
+ROOTDIR = xbmcaddon.Addon(id='plugin.video.amaproracing').getAddonInfo('path')
 
 ROOTURL = 'http://www.promotocross.com'
 
