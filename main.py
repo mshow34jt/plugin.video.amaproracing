@@ -18,8 +18,6 @@ local_string = xbmcaddon.Addon(id='plugin.video.amaproracing').getLocalizedStrin
 
 ROOTDIR = xbmcaddon.Addon(id='plugin.video.amaproracing').getAddonInfo('path')
 
-ROOTURL = 'http://www.promotocross.com'
-
 ICON = ROOTDIR+"icon.png"
 
 	

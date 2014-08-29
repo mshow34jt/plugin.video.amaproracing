@@ -5,6 +5,7 @@ import urllib, urllib2, httplib2
 import json
 
 ROOTDIR = xbmcaddon.Addon(id='plugin.video.amaproracing').getAddonInfo('path')
+ROOTURL = 'http://www.promotocross.com'
 FANART = ROOTDIR+'/images/fanart_motocross.jpg'
 ICON = ROOTDIR+'/images/icon_motocross.png'
 MAIN_URL = 'http://www.promotocross.com'
