@@ -13,7 +13,7 @@ class supercross():
 
     def CATEGORIES(self):        
         self.addDir('Race Day Live','/supercross/live',202,ICON,LIVE_FANART)        
-        self.addDir('Race Day Archive','/supercross/archive',203,ICON)
+        self.addDir('Race Day Live Archive','/supercross/archive',203,ICON)
         self.addDir('View Supercross Youtube Channel','/supercross/youtube',201,ICON)                
 
 
@@ -22,31 +22,41 @@ class supercross():
         #Attempt to get the Live Stream
         try:            
             json_source = self.GET_LIVESTREAM_INFO()
-            self.LIVESTREAM_LINK(str(json_source['upcoming_events']['data'][0]['id']))
+            #self.LIVESTREAM_LINK(str(json_source['upcoming_events']['data'][0]['id']))
+            for upcoming_event in json_source['upcoming_events']['data']:            
+                #if upcoming_event['in_progress'] == 'true':
+                self.LIVESTREAM_LINK(str(upcoming_event['id']))
+                #else:
+                    #self.RACE_DAY_LIVE_NEXT()
         except:
-            #Get the next live stream date
-            url = 'http://www.supercrosslive.com/race-day-live'
-            req = urllib2.Request(url) 
-            req.add_header('User-Agent', ' Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.115 Safari/537.36') 
-            #req.add_header('Referer', 'http://www.promotocross.com/motocross/live')
-            response = urllib2.urlopen(req) 
-            html = response.read()
-            start = html.find('<h2> Race Day Live presented')
-            end = html.find('</h2>', start)
-            next_stream = html[start+5:end]
-            
-            self.addLink(next_stream,'',next_stream, LIVE_FANART)
+            self.RACE_DAY_LIVE_NEXT()
             
         finally:
             pass
+    
+    def RACE_DAY_LIVE_NEXT(self):
+        #Get the next live stream date
+        url = 'http://www.supercrosslive.com/race-day-live'
+        req = urllib2.Request(url) 
+        req.add_header('User-Agent', ' Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.115 Safari/537.36') 
+        #req.add_header('Referer', 'http://www.promotocross.com/motocross/live')
+        response = urllib2.urlopen(req) 
+        html = response.read()
+        start = html.find('<h2> Race Day Live presented')
+        end = html.find('</h2>', start)
+        next_stream = html[start+5:end]
         
+        self.addLink(next_stream,'',next_stream, LIVE_FANART)
             
     def RACE_DAY_ARCHIVE(self):
         try:
             json_source = self.GET_LIVESTREAM_INFO()
             #Load all past events
             for past_event in json_source['past_events']['data']:            
-                self.LIVESTREAM_LINK(str(past_event['id']))
+                #name = past_event['full_name']
+                #bg_url = past_event['background_image']['url']
+                event_id = str(past_event['id'])
+                self.LIVESTREAM_LINK(event_id)                
         except:
             pass
 
@@ -67,7 +77,7 @@ class supercross():
 
     def LIVESTREAM_LINK(self,event_id):
         url = 'http://new.livestream.com/api/accounts/1543541/events/'+event_id+'/feed.json?&filter=video'
-        #print url
+        print url
         try:
             req = urllib2.Request(url) 
             req.add_header('User-Agent', ' Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.115 Safari/537.36')             
@@ -76,19 +86,19 @@ class supercross():
             response.close()
 
             name = json_source['data'][0]['data']['caption']
-            img_url = json_source['data'][0]['data']['thumbnail_url']
-
+            img_url = json_source['data'][0]['data']['thumbnail_url']            
             #Attempt to get the HD feed, if not try for the SD
             try:
-                live_url = json_source['data'][0]['data']['progressive_url_hd']
-                self.addLink(name, live_url, name, img_url)
+                stream_url = json_source['data'][0]['data']['progressive_url_hd']
+                self.addLink(name, stream_url, name, img_url)
             except:
-                live_url = json_source['data'][0]['data']['progressive_url']
-                self.addLink(name, live_url, name, img_url)
-            finally:
+                stream_url = json_source['data'][0]['data']['progressive_url']
+                self.addLink(name, stream_url, name, img_url)
+            finally:                
                 pass
         except:
             pass
+
 
 
     def SUPERCROSS_YOUTUBE_CHANNEL(self):        
@@ -97,12 +107,16 @@ class supercross():
 
 
 
-    def addLink(self,name,url,title,iconimage):
+    def addLink(self,name,url,title,iconimage,fanart=None):
         ok=True
         liz=xbmcgui.ListItem(name, iconImage="DefaultVideo.png", thumbnailImage=iconimage)
         liz.setProperty('fanart_image',FANART)
         liz.setProperty("IsPlayable", "true")
         liz.setInfo( type="Video", infoLabels={ "Title": title } )
+        if fanart != None:
+            liz.setProperty('fanart_image', fanart)
+        else:
+            liz.setProperty('fanart_image', FANART)
         ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=liz)
         return ok
 
