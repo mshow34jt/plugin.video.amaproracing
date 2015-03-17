@@ -4,6 +4,8 @@ import re, os, time
 import urllib, urllib2
 import json
 
+
+
 ROOTDIR = xbmcaddon.Addon(id='plugin.video.amaproracing').getAddonInfo('path')
 FANART = ROOTDIR+'/images/fanart_supercross.jpg'
 ICON = ROOTDIR+'/images/icon_supercross.png'
@@ -14,26 +16,51 @@ class supercross():
     def CATEGORIES(self):        
         self.addDir('Race Day Live','/supercross/live',202,ICON,LIVE_FANART)        
         self.addDir('Race Day Live Archive','/supercross/archive',203,ICON)
-        self.addDir('View Supercross Youtube Channel','/supercross/youtube',201,ICON)                
+        self.addDir('View Supercross Youtube Channel','/supercross/youtube',201,ICON) 
+        self.addDir('Livestream.com','/livestream',204,ICON)                        
 
 
-    def RACE_DAY_LIVE(self):                               
 
+    def RACE_DAY_LIVE(self):                  
         #Attempt to get the Live Stream
-        try:            
-            json_source = self.GET_LIVESTREAM_INFO()
-            #self.LIVESTREAM_LINK(str(json_source['upcoming_events']['data'][0]['id']))
-            for upcoming_event in json_source['upcoming_events']['data']:            
-                #if upcoming_event['in_progress'] == 'true':
-                self.LIVESTREAM_LINK(str(upcoming_event['id']))
-                #else:
-                    #self.RACE_DAY_LIVE_NEXT()
+        #try:            
+        json_source = self.GET_LIVESTREAM_INFO()
+        #self.LIVESTREAM_LINK(str(json_source['upcoming_events']['data'][0]['id']))
+        for upcoming_event in json_source['upcoming_events']['data']:     
+            if upcoming_event['in_progress'] == 'true':
+                url = 'http://api.new.livestream.com/accounts/1543541/events/'+str(upcoming_event['id'])+'/viewing_info'
+                #self.LIVESTREAM_LINK(str(upcoming_event['id']))
+                req = urllib2.Request(url)       
+                response = urllib2.urlopen(req)                    
+                json_source = json.load(response)
+                response.close()
+
+                m3u8_url = json_source['streamInfo']['m3u8_url']
+                print "M3U8!!!" + m3u8_url
+               
+                req = urllib2.Request(m3u8_url)
+                response = urllib2.urlopen(req)                    
+                master = response.read()
+                response.close()
+                cookie =  urllib.quote(response.info().getheader('Set-Cookie'))
+
+                line = re.compile("(.+?)\n").findall(master)  
+                
+                for temp_url in line:
+                    if '.m3u8' in temp_url:
+                        print temp_url
+                        self.addLink(desc,temp_url+'|Cookie='+cookie,desc, LIVE_FANART)
+                    else:
+                        start = temp_url.find('BANDWIDTH=')
+                        desc = temp_url[start:]
+        """                     
         except:
             self.RACE_DAY_LIVE_NEXT()
             
         finally:
             pass
-    
+        """
+
     def RACE_DAY_LIVE_NEXT(self):
         #Get the next live stream date
         url = 'http://www.supercrosslive.com/race-day-live'
