@@ -19,14 +19,15 @@ class motocross():
 
 
     def GET_YEAR(self):                   
-        url = MAIN_URL
+        url = MAIN_URL+'/mx/home'
         req = urllib2.Request(url)      
         req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
         response = urllib2.urlopen(req)
         link=response.read()
         response.close()        
         link = link.replace('\n',"")
-        start = link.index("Archive</a><ul")        
+        #start = link.index("Archive</a><ul")        
+        start = link.index("On Demand</a><ul")        
         end = link.index("</ul>",start)    
         link = link[start:end]
         
@@ -150,8 +151,11 @@ class motocross():
             #Get video image
             #ex. <meta property="og:image" content="http://www.promotocross.com/sites/default/files/images/video/thumbnail/start_450_moto_1_glenhelen_ortiz_49_1280.jpg" />
             ###############################################################################################################################################################
-            start_str = '<meta property="og:image" content="'
+            start_str = '<meta property="og:image" content="'            
             start = video_link.index(start_str)        
+            #Fix for 2012 videos
+            if start == -1:
+                start = video_link.find('<link rel="image_src" href="')
             end = video_link.index('" />',start)            
             image_link = video_link[start+len(start_str):end]                
             #print "IMAGE LINK =" +image_link
@@ -162,7 +166,10 @@ class motocross():
             #Get SWF embedcode
             #ex. <meta property="og:video" content="http://player.ooyala.com/player.swf?embedCode=45Mm8xbjpdrkHW1TKb8N-BFXJTTPunCK&amp;keepEmbedCode=true" />
             #################################################################################################################################################
-            start = video_link.find('<meta property="og:video" content=')        
+            start = video_link.find('<meta property="og:video" content=')    
+            #Fix for 2012 videos
+            if start == -1:
+                start = video_link.find('<link rel="video_src" href="')
             end = video_link.find('keepEmbedCode=true" />',start)            
             swf_link = video_link[start:end]                
             
