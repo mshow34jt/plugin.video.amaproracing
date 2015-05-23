@@ -9,6 +9,7 @@ ROOTURL = 'http://www.promotocross.com'
 FANART = ROOTDIR+'/images/fanart_motocross.jpg'
 ICON = ROOTDIR+'/images/icon_motocross.png'
 MAIN_URL = 'http://www.promotocross.com'
+USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.104 Safari/537.36'
 
 class motocross():
 
@@ -275,17 +276,9 @@ class motocross():
             url =  urllib.quote_plus(url+'|')       
             full_url = url + header_encoded     
             #print full_url
-            
-            #http://nbcstreameast.nbcsports.com/vod/9b11b5da-3d6e-4106-87e4-a6c7f7bd1e71/geo3-nbc-sports-live-extra0516091432-ua.ism/manifest(format=m3u8-aapl-v3)
-            #QualityLevels(3450000)/Manifest(video,format=m3u8-aapl-v3,audiotrack=audio_en_0)
             ios_url = ios_url.replace('manifest(format=m3u8-aapl-v3)','QualityLevels(3450000)/Manifest(video,format=m3u8-aapl-v3,audiotrack=audio_en_0)')        
-            """
-            ios_url = ios_url + '?' + header_encoded 
-            endcoded_cookies = self.GET_COOKIE(ios_url)
-            if endcoded_cookies != '':
-                ios_url = ios_url + '&' + endcoded_cookies      
-                print ios_url
-            """
+            ios_url = ios_url + '|User-Agent='+USER_AGENT            
+            
             self.addLink(name,ios_url, name,FANART) 
         except:
             pass
