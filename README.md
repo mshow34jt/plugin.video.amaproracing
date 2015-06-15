@@ -5,4 +5,4 @@ XBMC plugin for AMA Pro Racing
 
 This plugin was built to watch live streams and archive video of AMA Pro Racing events inside XBMC / KODI
 
-Official Forum Thread: http://forum.kodi.tv/showthread.php?tid=229688
+Official Thread: http://forum.kodi.tv/showthread.php?tid=229688
