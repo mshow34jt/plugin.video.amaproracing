@@ -179,7 +179,7 @@ class motocross():
         #Request the NBC sports moto stream, which redirects to a link that contains a PID variable that is needed    
         ##########################################################################################################
 
-        req = urllib2.Request('http://motostream.nbcsports.com/ ')            
+        req = urllib2.Request('http://motostream.nbcsports.com/')            
         #req.add_header('Connection','keep-alive')
         req.add_header('Accept','text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
         req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3') 
@@ -190,7 +190,7 @@ class motocross():
         response = urllib2.urlopen(req)        
         pid_url = response.geturl()
         response.close()  
-        print 'REDIRECT URL:' + pid_url    
+        print 'REDIRECT URL:' + pid_url            
         ##########################################################################################################
 
         ##########################################################################################################
@@ -202,7 +202,7 @@ class motocross():
         end = pid_url.find('&referrer=',start)            
         pid = pid_url[start+len(start_str):end]                
 
-        print "PID="+pid
+        print "PID="+pid        
         return pid
 
 
@@ -240,18 +240,14 @@ class motocross():
     
 
     def SET_LIVE_LINK(self,url): 
+        
         req = urllib2.Request(url)            
         req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
         response = urllib2.urlopen(req)
         live_source = response.read()
         response.close()  
-        
-        start_text = 'http://stream.nbcsports.com/motocross/?pid='
-        start = live_source.find(start_text)        
-        end = live_source.find('"',start+len(start_text))
-        pid = live_source[start+len(start_text):end] 
 
-        print "PID " + pid
+        pid = self.GET_PID()
         
         start_text = '<img alt="" class="media-image" height="540" width="960" typeof="foaf:Image" src="'
         start = live_source.find(start_text)        
