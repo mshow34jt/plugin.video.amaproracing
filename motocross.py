@@ -1,5 +1,5 @@
 import sys
-import xbmcplugin, xbmcgui, xbmcaddon
+import xbmcplugin, xbmcgui, xbmcaddon, xbmc
 import re, os, time
 import urllib, urllib2
 import json
@@ -13,64 +13,84 @@ USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 
 
 class motocross():
 
-    def CATEGORIES(self):
+    def categories(self):
+        #http://www.promotocross.com/media-block-get-filter-options-ajax/ajax/filter-category/all/16/video/all/all/all/all/all
+        url = 'http://www.promotocross.com/media-block-get-filter-options-ajax/ajax/filter-category/all/16/video/all/all/all/all/all'
+        #self.optionsToDir(url)
+
         self.addDir('Full Motos On Demand','/GET_YEAR',100,'')    
         self.addDir('Showcase','/GET_HIGHLIGHTS',101,'')        
-        self.SET_LIVE_LINK(MAIN_URL+'/mx/live') 
+        self.setLiveLink(MAIN_URL+'/mx/live') 
         #self.addDir('Test Archive','http://www.promotocross.com/mx/event/hangtown-2015/video/2015-hangtown-250-moto-1-full-race',106,'')
 
 
-    def FULL_MOTOS_ON_DEMAND(self):
-        for n in range(0, 4):
-            #current max is 121              
-            url = 'http://www.promotocross.com/media-block-get-results-ajax/ajax/451/16/video/all/all/all/all/all/'+str(n*11)
-            print url
-            req = urllib2.Request(url)      
+    def optionsToDir(url):        
+        req = urllib2.Request(url)      
+        req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
+        response = urllib2.urlopen(req)        
+        json_source = json.load(response)
+        response.close()
+
+        options = json_source['options']
+        for option in options:
+            #start = link.find('"')
+            #end = link.find("Load More Posts")
+            #link = link[start:end]
+            xbmc.log(option)
+            xbmc.log(options[option])
+            self.addDir(options[option],option,100,'')
+
+
+    def fullMotoYears(self):
+        url = 'http://www.promotocross.com/media-block-get-filter-options-ajax/ajax/filter-year/451/16/video/all/all/all/all/all'
+        req = urllib2.Request(url)      
+        req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
+        response = urllib2.urlopen(req)        
+        json_source = json.load(response)
+        response.close()
+
+        options = json_source['options']                
+        year_dict = {}
+        for option in  options:           
+            year_dict[option] = options[option]
+            
+        for key in sorted(year_dict, reverse=True):            
+            self.addDir(year_dict[key],key,103,'')
+
+
+    def fullMotosOnDemand(self, url):        
+        n=0
+        found_stream = True        
+        while found_stream:
+            xbmc.log(url+str(n*11))
+            req = urllib2.Request(url+str(n*11))      
             req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
             response = urllib2.urlopen(req)        
             json_source = json.load(response)
             response.close()
 
+            xbmc.log(str(json_source))
+
             link = json_source[1]['data']
             link = link.decode('utf-8')
-            link = link.replace('\n',"")
-            print link
+            link = link.replace('\n',"")            
             
-            match = re.compile('<img typeof="foaf:Image" src="(.+?)"(.*?)/></a>(.*?)<a href="(.*?)">(.+?)Full Race').findall(link)         
-            for image_url, junk, junk2, url, title in match:                
+            match = re.compile('<img typeof="foaf:Image" src="(.+?)"(.*?)/></a>(.*?)<a href="(.*?)">(.+?)Full Race', re.IGNORECASE).findall(link)         
+            found_stream = False
+            for image_url, junk, junk2, temp_url, title in match:                
+                found_stream = True
                 title = title.replace('(','')
-                title = title.replace(':','')
-                print image_url
-                print title + ' ' + MAIN_URL+url                
-                self.addDir(title,MAIN_URL+url,104,image_url)
-                
+                title = title.replace(':','')                
+                stream = MAIN_URL+temp_url
+                #self.addDir(title,MAIN_URL+url,104,image_url)                
+                self.addStream(title,stream,106,image_url)
 
-    def FULL_MOTOS_ON_DEMAND_OLD(self):
-        url = MAIN_URL+'/mx/video?category=451'
-        req = urllib2.Request(url)      
-        req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
-        response = urllib2.urlopen(req)
-        link=response.read()
-        response.close()        
-        link = link.replace('\n',"")
-        start = link.find('<div id="media-block">')
-        end = link.find("Load More Posts")
+            n = n+1
+    
 
-        link = link[start:end]
-        #print link
+    
 
-        match = re.compile('<img typeof="foaf:Image" src="(.+?)"(.*?)/></a>  <a href="(.*?)">(.+?): Full Race</a>').findall(link)         
-        for image_url, junk, url, title in match:
-            #<a href="/mx/event/utah-2014/video/2014-utah-250-moto-2-full-race">2014 Utah 250 Moto 2: Full Race</a> 
-            #<a href="/mx/event/hangtown-2015/video/2015-hangtown-250-moto-1-full-race">2015 Hangtown 250 Moto 1: Full Race</a> 
-            print image_url
-            print title + ' ' + MAIN_URL+url
-            #self.GET_VIDEO_LINK(MAIN_URL+url,title)
-            self.addDir(title,MAIN_URL+url,104,image_url)
-            #self.CHECK_FOR_NBC_VIDEO(MAIN_URL+url,title, image_url)
-        
-
-    def CHECK_FOR_NBC_VIDEO(self,url,video_name,image_link):        
+    def scrapeStream(self,url,video_name,image_link):        
         req = urllib2.Request(url)
         req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
         response = urllib2.urlopen(req)
@@ -130,11 +150,29 @@ class motocross():
         #print "NOW THE SMIL="+video_link
           
         match=re.compile('<video src="(.+?)" system-bitrate="(.+?)" height="(.+?)" width="(.+?)"/>').findall(video_link,10)
-            
-        for link,bitrate,height,width in match:           
+        stream_url = ''
+        stream_url = {}
+        stream_title = [] 
+        for link,bitrate,height,width in match:  
+            #Convert bitrate to kb
+            bitrate = str(int(bitrate) / 1024)
+            title = bitrate+'kbps ('+width+'x'+height+')'
+            stream_title.append(title)                
+            stream_url.update({title:link+'|User-Agent='+USER_AGENT})
             #Add only the first (highest quality) video as a selection
-            self.addLink(video_name,link,video_name,image_link) 
-            break
+            #self.addLink(video_name,link,video_name,image_link) 
+            #stream_url = link
+            #break
+
+        dialog = xbmcgui.Dialog()
+        ret = dialog.select('Choose Stream Quality', stream_title)        
+        if ret >=0:
+            stream_url = stream_url.get(stream_title[ret]) 
+        else:
+            sys.exit()
+
+
+        return stream_url
         #######################################################################
 
 
@@ -174,7 +212,34 @@ class motocross():
         return ok
 
 
-    def GET_PID(self):
+    def addStream(self,name,url,mode,iconimage,fanart=None):       
+        ok=True
+        u=sys.argv[0]+"?url="+urllib.quote_plus(url)+"&mode="+str(mode)+"&name="+urllib.quote_plus(name)
+        u = u+"&img_url="+urllib.quote_plus(iconimage)            
+        liz=xbmcgui.ListItem(name, iconImage=ICON, thumbnailImage=iconimage)            
+        liz.setInfo(type="Video", infoLabels='')
+        if fanart != None:
+            liz.setProperty('fanart_image', fanart)
+        else:
+            liz.setProperty('fanart_image', FANART)
+
+        print u
+        liz.setProperty("IsPlayable", "true")
+        ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=False)
+        xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
+        
+        return ok
+
+    def playStream(self, stream_url):
+        #stream_url = self.CHECK_FOR_NBC_VIDEO(url,'','')
+        #url = stream_url.get(stream_title[ret]) 
+        listitem = xbmcgui.ListItem(path=stream_url)
+        #listitem = xbmcgui.ListItem(path=stream_url[ret])       
+       
+        xbmcplugin.setResolvedUrl(int(sys.argv[1]), True, listitem)
+
+
+    def getPID(self):
         ##########################################################################################################
         #Request the NBC sports moto stream, which redirects to a link that contains a PID variable that is needed    
         ##########################################################################################################
@@ -190,7 +255,7 @@ class motocross():
         response = urllib2.urlopen(req)        
         pid_url = response.geturl()
         response.close()  
-        print 'REDIRECT URL:' + pid_url            
+        xbmc.log('REDIRECT URL:' + pid_url)
         ##########################################################################################################
 
         ##########################################################################################################
@@ -202,16 +267,16 @@ class motocross():
         end = pid_url.find('&referrer=',start)            
         pid = pid_url[start+len(start_str):end]                
 
-        print "PID="+pid        
+        xbmc.log("PID="+pid)
         return pid
 
 
-    def GET_HIGHLIGHTS(self):               
+    def getHighlights(self):               
         #highlights = 'http://stream.nbcsports.com/data/mobile/moto-2013.json'
         highlights = 'http://stream.nbcsports.com/data/mobile/mcms/prod/nbc-moto.json '
                      #http://hdliveextra-pmd.edgesuite.net/HD/image_sports/mobile/2014-08-23T22-56-41.233Z--1280x720_m61.jpg
                      #http://hdliveextra-pmd.edgesuite.net/HD/image_sports/mobile/2014-08-16T18-55-51.666Z--1280x720_m61.jpg
-        print "HIGHLIGHT SOURCES:"+highlights
+        xbmc.log("HIGHLIGHT SOURCES:"+highlights)
 
         ###########################################
         #Read the json file and extraxt the f4m url
@@ -239,7 +304,7 @@ class motocross():
                 self.addLink(name,url,name,imgurl) 
     
 
-    def SET_LIVE_LINK(self,url): 
+    def setLiveLink(self,url): 
         
         req = urllib2.Request(url)            
         req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
@@ -247,7 +312,7 @@ class motocross():
         live_source = response.read()
         response.close()  
 
-        pid = self.GET_PID()
+        pid = self.getPID()
         
         start_text = '<img alt="" class="media-image" height="540" width="960" typeof="foaf:Image" src="'
         start = live_source.find(start_text)        
@@ -259,15 +324,14 @@ class motocross():
         self.addDir('Live Stream',pid,102,live_details_img,live_details_img)    
 
 
-    def PLAY_LIVE(self,pid):        
-        #pid = self.GET_PID()
+    def playLive(self,pid):                
 
         #*********************************************************
         # LINK TO GET LIVE SOURCES 
         #ex. #http://stream.nbcsports.com/data/event_config_15620.json
         #*********************************************************
         live_sources = 'http://stream.nbcsports.com/data/live_sources_'+pid+'.json'   
-        print "LIVE SOURCES:"+live_sources
+        xbmc.log("LIVE SOURCES:"+live_sources)
         ##########################################################################################################
 
 
@@ -307,52 +371,6 @@ class motocross():
             pass
 
 
-    def GET_COOKIE(self,url):
-        #Used to get cookie for non-archived videos 
-        url = url.replace('|','?')
-        print 'COOKIE URL===' + url
-        alid = ''
-        hdntl = ''
-        cookies = ''
-        endcoded_cookies = ''
-
-        req = urllib2.Request(url)            
-        req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
-        response = urllib2.urlopen(req)    
-        header = response.info()
-        #print header
-        try: 
-            get_cookies = header['Set-Cookie']
-            #print 'Read Cookies:' + get_cookies 
-            ###################################################
-            #Only keep the cookies we need
-            # _alid_ for all
-            # hdntl for live streams
-            ###################################################
-            start = get_cookies.find('_alid_')
-            end = get_cookies.find(';',start)
-
-            alid =  get_cookies[start:end+1]    
-            print 'ALID===' + alid
-            cookies = alid
-
-            start = get_cookies.find('hdntl')
-            if start != -1:
-                end = get_cookies.find(';',start)
-                hdntl =  get_cookies[start:end+1]
-                print 'HDNTL===' + hdntl
-                cookies = cookies + ' ' + hdntl
-
-            if cookies != '':
-                cookies = {'Cookie' : cookies}
-                endcoded_cookies = urllib.urlencode(cookies)
-            
-            print 'Encoded Cookies:' + endcoded_cookies
-        except:
-            pass
-
-        return endcoded_cookies
-
     def get_params(self):
         param=[]
         paramstring=sys.argv[2]
@@ -388,220 +406,3 @@ class motocross():
         liz.setInfo( type="Video", infoLabels={ "Title": title } )
         ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=liz)
         return ok
-
-
-
-
-    ############################################################################
-    #OLD UNUSED CODE
-    ############################################################################
-
-
-
-    def GET_YEAR(self):                   
-        url = MAIN_URL+'/mx/home'
-        req = urllib2.Request(url)      
-        req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
-        response = urllib2.urlopen(req)
-        link=response.read()
-        response.close()        
-        link = link.replace('\n',"")
-        #start = link.index("Archive</a><ul")        
-        start = link.index("On Demand</a><ul")        
-        end = link.index("</ul>",start)    
-        link = link[start:end]
-        
-        match = re.compile('id=""><a href="(.*?)">(.+?)</a></li>').findall(link)                
-        #print match
-        
-        for year_link, year in match:   
-            print "YEAR LINK==="+year_link
-            if int(year) > 2011:
-                if year_link.startswith('/'):
-                    year_link = MAIN_URL + year_link
-                year_link = year_link.replace('" title="','')      
-                self.addDir(year,year_link,104,ICON)
-                #print GET_YEAR_link
-        
-
-    def GET_RACES(self,url,name):
-        global full_name
-        full_name = name
-        req = urllib2.Request(url)
-        req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
-        response = urllib2.urlopen(req)
-        link=response.read()
-        response.close()        
-        link = link.replace('\n',"")
-
-        match = re.compile('<strong>(.+?)</strong>').findall(link)    
-        if not match:       
-            match = re.compile('<h3>(.+?)</h3>').findall(link) 
-
-        #print match
-            
-        for location in match:           
-            self.addDir(location,link,105,ICON)
-
-        
-    def GET_RACE_DAY_VIDEOS(self,url,name,year):    
-        ####################################################################
-        #Attempt to read the code block where the links for the event reside    
-        ####################################################################
-        print "HERE IS THE YEAR==="+str(year)
-        link = url
-        start = link.find('<strong>'+name+'</strong>')
-        if start == -1:
-            start = link.index('<h3>'+name+'</h3>')
-        
-        if int(year) == 2014:        
-            end = link.find('</p><p><span style="color:#e51937;">',start)         
-            if end < 0:        
-                end = link.find('</div>',start)            
-
-        elif 2011 < int(year) < 2014:
-            #For 2013 videos
-            print "In 2013/2012 vids"        
-            end = link.find('</p><p><strong>',start)                     
-            end2 = link.find('<div style="clear:both;">',start)                     
-
-            if end < 0:                        
-                end = link.find('</p></div>',start) 
-            elif 0 < end2 < end:            
-                end = end2
-
-        elif int(year) < 2012:
-            end = link.find('</ul></div>',start)                     
-
-
-
-        link = link[start:end]
-        #print "HERE IS LINK = "+link
-
-        if int(year) < 2014:                
-            self.GET_VIDEO_LINK(link,'')          
-        else:
-            ######################################################
-            # Url contains video titles. Grab those as  selections
-            ######################################################
-            match = re.compile('<p>(.+?): <a href').findall(link)    
-            for video in match:           
-                self.addDir(video,link,106,ICON)
-            match = re.compile('<br />(.+?): <a href').findall(link)    
-            for video in match:           
-                self.addDir(video,link,106,ICON)
-    
-
-
-    def GET_VIDEO_LINK(self,url,name):
-        req = urllib2.Request(url)
-        req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
-        response = urllib2.urlopen(req)
-        link=response.read()
-        response.close()        
-        link = link.replace('\n',"")
-        #link = url
-        self.CHECK_FOR_NBC_VIDEO(link,name,'')
-
-    def TEMP(self):
-        #print link
-        if name != '':
-            start = link.find(name+': <a')
-            end = link.find('<br />',start)        
-            if end < 0:
-                end = len(link)    
-            link = link[start:end]        
-        
-
-        #ex.'<a href="http://www.allisports.com/motocross/video/2013-hangtown-450-moto-1-full-race-archive" target="_blank">'
-        
-        #"http://vplayer.nbcsports.com/p/BxmELC/allisports/select/IXBYA0ptkIA6?form=html&autoPlay=false&parentUrl=http%3A%2F%2Fdewtour.com%2Fvideos"
-        use_rooturl = 0
-        match = re.compile('<a href="(.+?)" target="_blank">(.+?)</a>').findall(link)    
-        if not match:
-            use_rooturl = 1
-            match = re.compile('<a href="(.+?)" class="use-ajax">(.+?)</a>').findall(link) 
-            if not match:   
-                use_rooturl = 0    
-                match = re.compile('<a href="(.+?)">(.+?)</a>').findall(link) 
-               
-
-        #################################################
-        #Go to each links page and retrieve the embedcode     
-        #################################################
-        for link,video_name in match:           
-            if use_rooturl == 1:
-                link = ROOTURL+link
-            print "LINK ==="+link
-            req = urllib2.Request(link)
-            req.add_header('User-Agent', ' Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3')
-            response = urllib2.urlopen(req)
-            video_link=response.read()
-            response.close()        
-            video_link = video_link.replace('\n',"")        
-
-            ###############################################################################################################################################################
-            #Get video image
-            #ex. <meta property="og:image" content="http://www.promotocross.com/sites/default/files/images/video/thumbnail/start_450_moto_1_glenhelen_ortiz_49_1280.jpg" />
-            ###############################################################################################################################################################
-            start_str = '<meta property="og:image" content="'                          
-            start = video_link.index(start_str)        
-            #Fix for 2012 videos
-            if start == -1:
-                start = video_link.find('<link rel="image_src" href="')
-            end = video_link.index('" />',start)            
-            image_link = video_link[start+len(start_str):end]                
-            #print "IMAGE LINK =" +image_link
-            ###############################################################################################################################################################
-
-
-            #################################################################################################################################################
-            #Get SWF embedcode
-            #ex. <meta property="og:video" content="http://player.ooyala.com/player.swf?embedCode=45Mm8xbjpdrkHW1TKb8N-BFXJTTPunCK&amp;keepEmbedCode=true" />
-            #################################################################################################################################################
-            start = video_link.find('<meta property="og:url" content=')    
-            #Fix for 2012 videos
-            if start == -1:
-                start = video_link.find('<link rel="video_src" href="')
-            end = video_link.find('keepEmbedCode=true" />',start)            
-            swf_link = video_link[start:end]                
-            
-            start = swf_link.find('swf?embedCode=')        
-            end = swf_link.find('&amp;',start) 
-            embedcode = swf_link[start+14:end]                
-            ##################################################################################################################################################
-
-
-            #################################################################################################
-            #If SWF embedcode not found search for NBC vplayer
-            #ex. http://vplayer.nbcsports.com/p/BxmELC/allisports/select/n_vapP81zrz8?autoPlay=true?form=html
-            #################################################################################################
-            if start == -1:
-                self.CHECK_FOR_NBC_VIDEO(video_link,video_name,image_link)              
-            else:
-                params = self.get_params()
-                year=urllib.unquote_plus(params["year"])
-                ####################################################################################################
-                #Set default RTMP settings for ooyala player and inject the embedcode to specify which video to play
-                ####################################################################################################
-                
-                if year == "2014" or year == '2013':
-                    app = 'ondemand?_fcs_vhost=cp58064.edgefcs.net'
-                    swfurl = 'http://player.ooyala.com/static/cacheable/27d91126daacf9df38e10be48dcfa3a5/player_v2.swf'    
-                    rtmpurl = 'rtmp://63.80.4.116/ondemand?_fcs_vhost=cp58064.edgefcs.net'                    
-                    pageurl = 'http://www.promotocross.com/sites/all/themes/lucasmoto2013/ooyala.php?embedCode='+embedcode
-                    playpath = 'mp4:/c/'+embedcode+'/DOcJ-FxaFrRg4gtDEwOjFyazowODE7G_'                           
-                elif year == '2012':                
-                    app = 'ondemand?_fcs_vhost=cp58064.edgefcs.net'                
-                    pageurl = 'http://www.promotocross.com/mx/archive'
-                    swfurl = 'http://player.ooyala.com/static/cacheable/27d91126daacf9df38e10be48dcfa3a5/player_v2.swf'
-                    rtmpurl = 'rtmp://209.18.41.108/ondemand?_fcs_vhost=cp58064.edgefcs.net'
-                    playpath = 'mp4:/c/'+embedcode+'/DOcJ-FxaFrRg4gtGEwOmk2OjBrO5dC5F'
-
-
-
-                rtmp = rtmpurl + ' playpath=' + playpath + ' app=' + app + ' pageURL=' + pageurl + ' swfURL=' + swfurl             
-                self.addLink(video_name,rtmp,video_name,image_link) 
-                ####################################################################################################   
-
-            ####################################################################################################
