@@ -24,11 +24,11 @@ ICON = ROOTDIR+"icon.png"
 
 	
 def CATEGORIES():                
-    addDir('Endurocross','/ENDUROCROSS',300,ROOTDIR+'/images/icon_endurocross.png',ROOTDIR+'/images/fanart_endurocross.jpg')
+    #addDir('Endurocross','/ENDUROCROSS',300,ROOTDIR+'/images/icon_endurocross.png',ROOTDIR+'/images/fanart_endurocross.jpg')
     addDir('Motocross','/Motocross',109,ROOTDIR+'/images/icon_motocross.png',ROOTDIR+'/images/fanart_motocross.jpg')
     addDir('Supercross','/SUPERCROSS',200,ROOTDIR+'/images/icon_supercross.png',ROOTDIR+'/images/fanart_supercross.jpg')    
-    addDir('Road Racing','/ROADRACING',400,ROOTDIR+'/images/icon_roadracing.png',ROOTDIR+'/images/fanart_roadracing.jpg')    
-    addDir('Flat Track','/FLATTRACK',500,ROOTDIR+'/images/icon_flattrack.png',ROOTDIR+'/images/fanart_flattrack.jpg')    
+    #addDir('Road Racing','/ROADRACING',400,ROOTDIR+'/images/icon_roadracing.png',ROOTDIR+'/images/fanart_roadracing.jpg')    
+    #addDir('Flat Track','/FLATTRACK',500,ROOTDIR+'/images/icon_flattrack.png',ROOTDIR+'/images/fanart_flattrack.jpg')    
     #addDir('DirtRider.com Videos','http://www.dirtrider.com/videos/',2,'')    
 
 
@@ -116,27 +116,20 @@ try:
 except:
     pass
 
-print "Mode: "+str(mode)
-#print "URL: "+str(url)
-print "Name: "+str(name)
-print "Year:"+str(year)
 
-
-if mode==None or url==None or len(url)<1:
-        #print ""                
+if mode==None or url==None or len(url)<1:               
         CATEGORIES()        
 
 ####################
 #MOTOCROSS MODES    
 ####################    
-elif mode==100:
-		#print "GET_YEAR MODE!"
+elif mode==100:		
         motocross = motocross()
         motocross.fullMotoYears()        
 
 elif mode==101:
         motocross = motocross()
-        motocross.getHighlights()
+        motocross.getVideoTypes()
 
 elif mode==102:        
         motocross = motocross()
@@ -147,42 +140,46 @@ elif mode==103:
         stream_url = 'http://www.promotocross.com/media-block-get-results-ajax/ajax/451/16/video/'+url+'/all/all/all/all/'
         motocross.fullMotosOnDemand(stream_url)
 
-elif mode==104:       
-        motocross = motocross()        
-        motocross.scrapeStream(url,name,img_url)  
-
-elif mode==105:        
-        motocross = motocross()
-        motocross.GET_RACE_DAY_VIDEOS(url,name,year)
-
 elif mode==106:        
-        motocross = motocross()
-        #motocross.GET_VIDEO_LINK(url,name)
+        motocross = motocross()        
         url = motocross.scrapeStream(url,'','')
         motocross.playStream(url)
+
+elif mode==107:
+        motocross = motocross()
+        motocross.getVOD(url)
 
 elif mode==109:
     motocross = motocross()
     motocross.categories()
+
 
 ####################
 #SUPERCROSS MODES
 ####################
 elif mode==200:
     supercross = supercross()
-    supercross.CATEGORIES()
+    supercross.categories()
 
 elif mode==201:    
     supercross = supercross()
-    supercross.SUPERCROSS_YOUTUBE_CHANNEL()    
+    supercross.getYoutubeChannel()    
 
 elif mode==202:    
     supercross = supercross()
-    supercross.RACE_DAY_LIVE()
+    supercross.raceDayLive()
 
 elif mode==203:    
     supercross = supercross()
-    supercross.RACE_DAY_ARCHIVE()
+    supercross.raceDayArchive()
+
+elif mode==204:      
+    event_id=urllib.unquote_plus(params["event_id"])
+    owner_id=urllib.unquote_plus(params["owner_id"])
+
+    supercross = supercross()
+    supercross.getLiveStream(owner_id,event_id)
+
 
 ####################
 #ENDUROCROSS MODES
@@ -202,4 +199,6 @@ elif mode==400:
 elif mode==500:
     flattrack = flattrack()
     flattrack.ARCHIVE()
+
+    
 xbmcplugin.endOfDirectory(addon_handle)
